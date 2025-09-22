@@ -1,0 +1,41 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4" style="max-width: 400px; margin: 0 auto">
+  <h2 class="section-title">Login</h2>
+
+  <% if (error) { %>
+  <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <form action="/login" method="POST">
+    <div class="form-group">
+      <label for="email" class="form-label">Email</label>
+      <input
+        type="email"
+        id="email"
+        name="email"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="password" class="form-label">Password</label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn" style="width: 100%">Login</button>
+  </form>
+
+  <p style="text-align: center; margin-top: 1.5rem">
+    Don't have an account? <a href="/register">Register here</a>
+  </p>
+</section>
+
+<%- include('../partials/footer') %>

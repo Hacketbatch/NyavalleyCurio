@@ -1,0 +1,190 @@
+<%- include('../partials/header') %>
+
+<section
+  class="hero"
+  style="
+    /* background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); */
+    background: #d4af37;
+    color: white;
+    padding: 4rem 0;
+    text-align: center;
+    margin-bottom: 3rem;
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+  "
+>
+  <video
+    autoplay
+    muted
+    loop
+    playsinline
+    class="hero-video"
+    style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* ensures video covers background */
+      z-index: -2;
+      mix-blend-mode: darken;
+    "
+  >
+    <source src="/images/carving.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <h1 style="font-size: 2.5rem; margin-bottom: 1rem">
+    Welcome to Nyavalley Curio
+  </h1>
+  <p style="font-size: 1.2rem; max-width: 700px; margin: 0 auto 2rem">
+    Discover authentic African crafts, jewelry, and artifacts. Handcrafted with
+    tradition and love.
+  </p>
+  <a
+    href="/products"
+    class="btn"
+    style="
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background-color: #111;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: background-color 0.3s;
+    "
+    >Explore Our Collection</a
+  >
+</section>
+
+<section class="mb-4">
+  <h2 class="section-title">Featured Categories</h2>
+  <div
+    class="categories-grid"
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    "
+  >
+    <div
+      class="category-card carvings"
+      style="
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        padding: 1.5rem;
+      "
+    >
+      <div class="img">
+        <img src="/images/carving.jpg" alt="" />
+      </div>
+      <h3>Carvings</h3>
+      <p>Soap stone and wooden carvings</p>
+      <a href="/products?category=1" class="btn btn-outline">Browse Carvings</a>
+    </div>
+
+    <div
+      class="category-card"
+      style="
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        padding: 1.5rem;
+      "
+    >
+      <div class="img">
+        <img src="/images/jewelry.jpg" alt="" />
+      </div>
+      <h3>Jewelry</h3>
+      <p>Necklaces, bangles, and earrings</p>
+      <a href="/products?category=4" class="btn btn-outline">Browse Jewelry</a>
+    </div>
+
+    <div
+      class="category-card"
+      style="
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        padding: 1.5rem;
+      "
+    >
+      <div class="img">
+        <img src="/images/bags.jpg" alt="" />
+      </div>
+      <h3>African Attires</h3>
+      <p>Traditional clothing and accessories</p>
+      <a href="/products?category=11" class="btn btn-outline">Browse Attires</a>
+    </div>
+
+    <div
+      class="category-card"
+      style="
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        padding: 1.5rem;
+      "
+    >
+      <div class="img">
+        <img src="/images/painting.jpg" alt="" />
+      </div>
+      <h3>Paintings</h3>
+      <p>African art and wildlife paintings</p>
+      <a href="/products?category=17" class="btn btn-outline"
+        >Browse Paintings</a
+      >
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <h2 class="section-title">Featured Products</h2>
+  <div class="products-grid">
+    <% if (products.length > 0) { %> <% products.forEach(product => { %>
+    <div class="product-card">
+      <img
+        src="<%= product.image_url || '/images/placeholder.jpg' %>"
+        alt="<%= product.name %>"
+        class="product-image"
+      />
+      <div class="product-info">
+        <h3 class="product-name"><%= product.name %></h3>
+        <p class="product-price">$<%= product.price.toFixed(2) %></p>
+        <p class="product-description"><%= product.description %></p>
+        <div class="product-actions">
+          <a href="/product/<%= product.product_id %>" class="btn btn-outline"
+            >View Details</a
+          >
+          <% if (user) { %>
+          <button
+            class="btn add-to-cart"
+            data-product-id="<%= product.product_id %>"
+          >
+            Add to Cart
+          </button>
+          <% } else { %>
+          <a href="/login" class="btn">Login to Purchase</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% }); %> <% } else { %>
+    <div class="text-center" style="grid-column: 1 / -1">
+      <p>No products found.</p>
+    </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

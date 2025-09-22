@@ -1,0 +1,386 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Checkout</h2>
+
+  <div class="checkout-container">
+    <div class="checkout-section">
+      <h3>Shipping Address</h3>
+
+      <% if (addresses.length > 0) { %>
+      <div class="addresses-list">
+        <% addresses.forEach(address => { %>
+        <div class="address-card" data-address-id="<%= address.address_id %>">
+          <h4><%= address.address_type.toUpperCase() %> Address</h4>
+          <p><%= address.street_address %></p>
+          <p>
+            <%= address.city %>, <%= address.state %> <%= address.zip_code %>
+          </p>
+          <p><%= address.country %></p>
+        </div>
+        <% }); %>
+      </div>
+
+      <input
+        type="hidden"
+        name="shipping_address_id"
+        id="shipping_address_id"
+        required
+      />
+      <% } else { %>
+      <p>You don't have any addresses saved. Please add a shipping address.</p>
+      <% } %>
+
+      <div style="margin-top: 1.5rem">
+        <button class="btn btn-outline" onclick="showAddAddressForm()">
+          Add New Address
+        </button>
+      </div>
+
+      <div
+        id="add-address-form"
+        class="hidden"
+        style="
+          margin-top: 1.5rem;
+          padding: 1rem;
+          border: 1px solid #dee2e6;
+          border-radius: 4px;
+        "
+      >
+        <h4>Add New Address</h4>
+        <div class="form-group">
+          <label class="form-label">Address Type</label>
+          <select id="new_address_type" class="form-control">
+            <option value="shipping">Shipping</option>
+            <option value="billing">Billing</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input type="text" id="new_country" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <input type="text" id="new_state" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" id="new_city" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Street Address</label>
+          <input
+            type="text"
+            id="new_street_address"
+            class="form-control"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Zip Code</label>
+          <input type="text" id="new_zip_code" class="form-control" required />
+        </div>
+        <button class="btn" onclick="addNewAddress()">Save Address</button>
+        <button class="btn btn-outline" onclick="hideAddAddressForm()">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div class="checkout-section">
+      <h3>Order Summary</h3>
+
+      <div class="order-items">
+        <% cartItems.forEach(item => { %>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #dee2e6;
+          "
+        >
+          <div>
+            <h4><%= item.name %></h4>
+            <p>Quantity: <%= item.quantity %></p>
+          </div>
+          <div>
+            <p>$<%= (item.price * item.quantity).toFixed(2) %></p>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+
+      <div
+        style="
+          text-align: right;
+          font-size: 1.2rem;
+          font-weight: bold;
+          margin: 1.5rem 0;
+        "
+      >
+        Total: $<%= total.toFixed(2) %>
+      </div>
+
+      <div class="payment-method">
+        <h3>Payment Method</h3>
+
+        <div class="payment-option" data-method="credit_card">
+          <input
+            type="radio"
+            name="payment_method"
+            value="credit_card"
+            id="credit_card"
+          />
+          <label for="credit_card">Credit Card</label>
+        </div>
+
+        <div class="payment-option" data-method="paypal">
+          <input
+            type="radio"
+            name="payment_method"
+            value="paypal"
+            id="paypal"
+          />
+          <label for="paypal">PayPal</label>
+        </div>
+
+        <div class="payment-option" data-method="upi">
+          <input type="radio" name="payment_method" value="upi" id="upi" />
+          <label for="upi">UPI</label>
+        </div>
+
+        <div class="payment-option" data-method="bank_transfer">
+          <input
+            type="radio"
+            name="payment_method"
+            value="bank_transfer"
+            id="bank_transfer"
+          />
+          <label for="bank_transfer">Bank Transfer</label>
+        </div>
+
+        <input
+          type="hidden"
+          name="payment_method"
+          id="payment_method"
+          required
+        />
+      </div>
+
+      <button
+        id="place-order"
+        class="btn"
+        style="width: 100%; margin-top: 1.5rem; padding: 1rem"
+      >
+        Place Order
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+// Address selection functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Address card selection
+    const addressCards = document.querySelectorAll('.address-card');
+    addressCards.forEach(card => {
+        card.addEventListener('click', function() {
+            addressCards.forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('shipping_address_id').value = this.dataset.addressId;
+        });
+    });
+
+    // Payment method selection
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    paymentOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            paymentOptions.forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            document.getElementById('payment_method').value = radio.value;
+        });
+    });
+
+    // Place order button
+    const placeOrderBtn = document.getElementById('place-order');
+    if (placeOrderBtn) {
+        placeOrderBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            placeOrder();
+        });
+    }
+});
+
+function showAddAddressForm() {
+    document.getElementById('add-address-form').classList.remove('hidden');
+}
+
+function hideAddAddressForm() {
+    document.getElementById('add-address-form').classList.add('hidden');
+    // Clear form fields
+    document.getElementById('new_country').value = '';
+    document.getElementById('new_state').value = '';
+    document.getElementById('new_city').value = '';
+    document.getElementById('new_street_address').value = '';
+    document.getElementById('new_zip_code').value = '';
+}
+
+function addNewAddress() {
+    const country = document.getElementById('new_country').value;
+    const state = document.getElementById('new_state').value;
+    const city = document.getElementById('new_city').value;
+    const streetAddress = document.getElementById('new_street_address').value;
+    const zipCode = document.getElementById('new_zip_code').value;
+    const addressType = document.getElementById('new_address_type').value;
+
+    if (!country || !state || !city || !streetAddress || !zipCode) {
+        alert('Please fill in all address fields');
+        return;
+    }
+
+    fetch('/add-address', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            country: country,
+            state: state,
+            city: city,
+            street_address: streetAddress,
+            zip_code: zipCode,
+            address_type: addressType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Address added successfully!');
+            location.reload(); // Reload to show the new address
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+function placeOrder() {
+    const shippingAddressId = document.getElementById('shipping_address_id').value;
+    const paymentMethod = document.getElementById('payment_method').value;
+
+    if (!shippingAddressId) {
+        alert('Please select a shipping address');
+        return;
+    }
+
+    if (!paymentMethod) {
+        alert('Please select a payment method');
+        return;
+    }
+
+    fetch('/place-order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            shipping_address_id: shippingAddressId,
+            payment_method: paymentMethod
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Order placed successfully! Your order ID is: ' + data.orderId);
+            window.location.href = '/account?order_success=true';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+// Add some CSS for better UI
+const style = document.createElement('style');
+style.textContent = `
+    .address-card {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .address-card:hover {
+        border-color: #4e73df;
+        background-color: #f8f9fa;
+    }
+    
+    .address-card.selected {
+        border-color: #4e73df;
+        background-color: #e8f4ff;
+    }
+    
+    .payment-option {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 0.5rem;
+    }
+    
+    .payment-option:hover {
+        border-color: #4e73df;
+        background-color: #f8f9fa;
+    }
+    
+    .payment-option.selected {
+        border-color: #4e73df;
+        background-color: #e8f4ff;
+    }
+    
+    .payment-option input[type="radio"] {
+        margin-right: 0.5rem;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .checkout-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .checkout-section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (max-width: 768px) {
+        .checkout-container {
+            grid-template-columns: 1fr;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+<%- include('../partials/footer') %>

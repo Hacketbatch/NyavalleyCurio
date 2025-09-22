@@ -1,0 +1,150 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+    <h2 class="section-title">Our Products</h2>
+    
+    <div class="filters-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
+        <div class="category-filter" style="margin-bottom: 1rem;">
+            <label for="category" class="form-label">Filter by Category:</label>
+            <select id="category" class="form-control" style="width: auto; display: inline-block; margin-left: 10px;">
+                <option value="">All Categories</option>
+                <% categories.forEach(category => { %>
+                    <% if (category.children && category.children.length > 0) { %>
+                        <optgroup label="<%= category.name %>">
+                            <option value="<%= category.category_id %>" 
+                                    <%= currentCategory == category.category_id ? 'selected' : '' %>>
+                                All <%= category.name %>
+                            </option>
+                            <% category.children.forEach(subcategory => { %>
+                                <option value="<%= subcategory.category_id %>" 
+                                        <%= currentCategory == subcategory.category_id ? 'selected' : '' %>>
+                                    &nbsp;&nbsp;↳ <%= subcategory.name %>
+                                </option>
+                            <% }); %>
+                        </optgroup>
+                    <% } else { %>
+                        <option value="<%= category.category_id %>" 
+                                <%= currentCategory == category.category_id ? 'selected' : '' %>>
+                            <%= category.name %>
+                        </option>
+                    <% } %>
+                <% }); %>
+            </select>
+        </div>
+        
+        <div class="search-filter" style="margin-bottom: 1rem;">
+            <label for="search" class="form-label">Search:</label>
+            <input type="text" id="search" class="form-control" 
+                   placeholder="Product name..." 
+                   value="<%= currentSearch || '' %>"
+                   style="width: auto; display: inline-block; margin-left: 10px;">
+            <button class="btn" onclick="searchProducts()" style="margin-left: 10px;">Search</button>
+        </div>
+    </div>
+
+    <!-- Rest of the products.ejs content remains the same -->
+    <div class="products-grid">
+        <% if (products.length > 0) { %>
+            <% products.forEach(product => { %>
+                <div class="product-card">
+                    <img src="<%= product.image_url || '/images/placeholder.jpg' %>" alt="<%= product.name %>" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name"><%= product.name %></h3>
+                        <p class="product-category" style="color: #6c757d; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                            <%= product.category_name %>
+                        </p>
+                        <p class="product-price">$<%= product.price.toFixed(2) %></p>
+                        <p class="product-description"><%= product.description %></p>
+                        <div class="product-actions">
+                            <a href="/product/<%= product.product_id %>" class="btn btn-outline">View Details</a>
+                            <% if (user) { %>
+                                <button class="btn add-to-cart" data-product-id="<%= product.product_id %>">Add to Cart</button>
+                            <% } else { %>
+                                <a href="/login" class="btn">Login to Purchase</a>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="text-center" style="grid-column: 1 / -1;">
+                <p>No products found.</p>
+                <a href="/products" class="btn">View All Products</a>
+            </div>
+        <% } %>
+    </div>
+
+    <% if (totalPages > 1) { %>
+        <div class="pagination" style="display: flex; justify-content: center; margin-top: 2rem;">
+            <% if (currentPage > 1) { %>
+                <a href="/products?page=<%= currentPage - 1 %><%= currentCategory ? '&category=' + currentCategory : '' %><%= currentSearch ? '&search=' + currentSearch : '' %>" 
+                   class="btn btn-outline" style="margin-right: 10px;">Previous</a>
+            <% } %>
+            
+            <% for (let i = 1; i <= totalPages; i++) { %>
+                <a href="/products?page=<%= i %><%= currentCategory ? '&category=' + currentCategory : '' %><%= currentSearch ? '&search=' + currentSearch : '' %>" 
+                   class="btn <%= i === currentPage ? '' : 'btn-outline' %>" 
+                   style="margin: 0 5px;"><%= i %></a>
+            <% } %>
+            
+            <% if (currentPage < totalPages) { %>
+                <a href="/products?page=<%= currentPage + 1 %><%= currentCategory ? '&category=' + currentCategory : '' %><%= currentSearch ? '&search=' + currentSearch : '' %>" 
+                   class="btn btn-outline" style="margin-left: 10px;">Next</a>
+            <% } %>
+        </div>
+    <% } %>
+</section>
+
+<script>
+    function filterByCategory() {
+        const categoryId = document.getElementById('category').value;
+        const searchTerm = document.getElementById('search').value;
+        
+        let url = '/products?';
+        if (categoryId) {
+            url += `category=${categoryId}&`;
+        }
+        if (searchTerm) {
+            url += `search=${encodeURIComponent(searchTerm)}&`;
+        }
+        
+        // Remove trailing & or ? if no parameters
+        if (url.endsWith('&') || url.endsWith('?')) {
+            url = url.slice(0, -1);
+        }
+        
+        window.location.href = url;
+    }
+    
+    function searchProducts() {
+        const searchTerm = document.getElementById('search').value;
+        const categoryId = document.getElementById('category').value;
+        
+        let url = '/products?';
+        if (searchTerm) {
+            url += `search=${encodeURIComponent(searchTerm)}&`;
+        }
+        if (categoryId) {
+            url += `category=${categoryId}&`;
+        }
+        
+        // Remove trailing & or ? if no parameters
+        if (url.endsWith('&') || url.endsWith('?')) {
+            url = url.slice(0, -1);
+        }
+        
+        window.location.href = url;
+    }
+    
+    // Allow pressing Enter to search
+    document.getElementById('search').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchProducts();
+        }
+    });
+    
+    // Update filter when category changes
+    document.getElementById('category').addEventListener('change', filterByCategory);
+</script>
+
+<%- include('../partials/footer') %>
