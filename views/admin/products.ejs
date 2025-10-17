@@ -1,0 +1,68 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Products</h2>
+  <form method="GET" class="mt-2" style="display:flex; gap: .5rem; align-items:center">
+    <input type="text" class="form-control" name="q" value="<%= q || '' %>" placeholder="Search products..." style="max-width:300px" />
+    <select class="form-control" name="sort" style="max-width:200px">
+      <option value="created_at" <%= sort==='created_at'?'selected':'' %>>Newest</option>
+      <option value="name" <%= sort==='name'?'selected':'' %>>Name</option>
+      <option value="price" <%= sort==='price'?'selected':'' %>>Price</option>
+      <option value="product_id" <%= sort==='product_id'?'selected':'' %>>ID</option>
+    </select>
+    <select class="form-control" name="dir" style="max-width:120px">
+      <option value="desc" <%= dir==='desc'?'selected':'' %>>Desc</option>
+      <option value="asc" <%= dir==='asc'?'selected':'' %>>Asc</option>
+    </select>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  <div class="mt-2">
+    <a href="/admin/products/new" class="btn">Add Product</a>
+  </div>
+  <div class="account-content mt-2">
+    <% if (products && products.length) { %>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        <% products.forEach(p => { %>
+          <tr>
+            <td><%= p.product_id %></td>
+            <td><%= p.name %></td>
+            <td>$<%= Number(p.price).toFixed(2) %></td>
+            <td><%= p.is_active ? 'Yes' : 'No' %></td>
+            <td>
+              <a href="/admin/products/<%= p.product_id %>/edit" class="btn btn-outline">Edit</a>
+              <form action="/admin/products/<%= p.product_id %>/delete" method="POST" style="display:inline">
+                <button type="submit" class="btn" onclick="return confirm('Delete this product?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No products found.</p>
+    <% } %>
+  </div>
+  <% if (totalPages && totalPages > 1) { %>
+  <div class="mt-2" style="display:flex; gap:.5rem; flex-wrap:wrap">
+    <% for (let i=1;i<=totalPages;i++){ %>
+      <a class="btn btn-outline" href="?page=<%= i %>&q=<%= q||'' %>&sort=<%= sort %>&dir=<%= dir %>"><%= i %></a>
+    <% } %>
+  </div>
+  <% } %>
+</section>
+
+
+<%- include('../partials/footer') %>
+
+
+

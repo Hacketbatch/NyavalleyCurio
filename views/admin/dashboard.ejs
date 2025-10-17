@@ -1,0 +1,54 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Admin Dashboard</h2>
+  <div class="products-grid">
+    <div class="product-card">
+      <div class="product-info">
+        <h3>Total Sales</h3>
+        <p class="product-price">$<%= (stats.totalSales || 0).toFixed(2) %></p>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-info">
+        <h3>Total Orders</h3>
+        <p class="product-price"><%= stats.totalOrders || 0 %></p>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-info">
+        <h3>Total Users</h3>
+        <p class="product-price"><%= stats.totalUsers || 0 %></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <h3 class="section-title">Latest Orders</h3>
+  <div class="account-content">
+    <% if (latestOrders && latestOrders.length) { %>
+      <% latestOrders.forEach(o => { %>
+        <div class="order-card">
+          <div class="order-header">
+            <span>#<%= o.order_id %> • <%= o.name %></span>
+            <span>$<%= o.total_amount %></span>
+          </div>
+          <div>Status: <%= o.status %></div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p>No recent orders</p>
+    <% } %>
+  </div>
+  <div class="mt-2">
+    <a href="/admin/orders" class="btn">Manage Orders</a>
+    <a href="/admin/products" class="btn btn-outline">Manage Products</a>
+    <a href="/admin/users" class="btn btn-outline">Manage Users</a>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>
+
+
+

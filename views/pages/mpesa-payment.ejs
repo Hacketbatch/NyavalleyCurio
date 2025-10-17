@@ -1,0 +1,95 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <div class="container">
+    <h2 class="section-title" style="color: #008000; text-align: center; font-weight: bold;">M-Pesa Payment</h2>
+
+    <div class="payment-form" style="background-color: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 400px; margin: 0 auto;">
+      <div class="form-group">
+        <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">Enter M-Pesa Phone Number</label>
+        <input
+          type="tel"
+          id="phone_number"
+          class="form-control"
+          placeholder="254XXXXXXXXX"
+          required
+          style="width: 100%; padding: 0.75rem; border: 1px solid #008000; border-radius: 4px; font-size: 1rem;"
+        />
+        <small class="form-text" style="color: #666; font-size: 0.85rem;"
+          >Enter your phone number in the format: 254XXXXXXXXX</small
+        >
+      </div>
+
+      <div class="order-summary" style="margin: 1.5rem 0; padding: 1rem; background-color: #f0f0f0; border-radius: 4px; border-left: 4px solid #008000;">
+        <h3 style="margin: 0 0 0.5rem; color: #008000; font-size: 1.2rem;">Order Summary</h3>
+        <p style="margin: 0; font-weight: bold;">Total Amount: KES <%= amount %></p>
+      </div>
+
+      <button
+        id="initiate-payment"
+        class="btn"
+        style="width: 100%; margin-top: 1.5rem; padding: 1rem; background-color: #008000; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.3s;"
+        onmouseover="this.style.backgroundColor='#006400'"
+        onmouseout="this.style.backgroundColor='#008000'"
+      >
+        Pay with M-Pesa
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const initiatePaymentBtn = document.getElementById('initiate-payment');
+    const phoneInput = document.getElementById('phone_number');
+
+    initiatePaymentBtn.addEventListener('click', async () => {
+      const phone = phoneInput.value.trim();
+
+      if (!phone) {
+        alert('Please enter your phone number');
+        return;
+      }
+
+      if (!phone.match(/^254\d{9}$/)) {
+        alert('Please enter a valid phone number in the format: 254XXXXXXXXX');
+        return;
+      }
+
+      try {
+        initiatePaymentBtn.disabled = true;
+        initiatePaymentBtn.textContent = 'Processing...';
+
+  const response = await fetch('/api/mpesa/pay', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phone: phone,
+            amount: <%= amount %>,
+            orderId: '<%= orderId %>'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.ResponseCode === "0") {
+          alert('Please check your phone to complete the payment');
+          // Redirect to a payment status page or order confirmation
+          window.location.href = '/payment-success';
+        } else {
+          throw new Error(data.errorMessage || 'Payment initiation failed');
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        initiatePaymentBtn.disabled = false;
+        initiatePaymentBtn.textContent = 'Pay with M-Pesa';
+      }
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

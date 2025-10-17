@@ -4,6 +4,7 @@
   <h2 class="section-title">Checkout</h2>
 
   <div class="checkout-container">
+    <!-- Shipping Address -->
     <div class="checkout-section">
       <h3>Shipping Address</h3>
 
@@ -37,6 +38,7 @@
         </button>
       </div>
 
+      <!-- Add address form -->
       <div
         id="add-address-form"
         class="hidden"
@@ -56,20 +58,20 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Country</label>
-          <input type="text" id="new_country" class="form-control" required />
+          <label class="form-label">Country</label
+          ><input type="text" id="new_country" class="form-control" required />
         </div>
         <div class="form-group">
-          <label class="form-label">State</label>
-          <input type="text" id="new_state" class="form-control" required />
+          <label class="form-label">State</label
+          ><input type="text" id="new_state" class="form-control" required />
         </div>
         <div class="form-group">
-          <label class="form-label">City</label>
-          <input type="text" id="new_city" class="form-control" required />
+          <label class="form-label">City</label
+          ><input type="text" id="new_city" class="form-control" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Street Address</label>
-          <input
+          <label class="form-label">Street Address</label
+          ><input
             type="text"
             id="new_street_address"
             class="form-control"
@@ -77,8 +79,8 @@
           />
         </div>
         <div class="form-group">
-          <label class="form-label">Zip Code</label>
-          <input type="text" id="new_zip_code" class="form-control" required />
+          <label class="form-label">Zip Code</label
+          ><input type="text" id="new_zip_code" class="form-control" required />
         </div>
         <button class="btn" onclick="addNewAddress()">Save Address</button>
         <button class="btn btn-outline" onclick="hideAddAddressForm()">
@@ -87,6 +89,7 @@
       </div>
     </div>
 
+    <!-- Order Summary -->
     <div class="checkout-section">
       <h3>Order Summary</h3>
 
@@ -123,6 +126,19 @@
         Total: $<%= total.toFixed(2) %>
       </div>
 
+      <!-- Coupon -->
+      <div class="form-group">
+        <label class="form-label">Coupon Code</label>
+        <input
+          type="text"
+          id="coupon_code"
+          class="form-control"
+          placeholder="Enter coupon"
+          style="max-width: 200px"
+        />
+      </div>
+
+      <!-- Payment Methods -->
       <div class="payment-method">
         <h3>Payment Method</h3>
 
@@ -133,7 +149,7 @@
             value="credit_card"
             id="credit_card"
           />
-          <label for="credit_card">Credit Card</label>
+          <label for="credit_card">Credit Card (via Stripe)</label>
         </div>
 
         <div class="payment-option" data-method="paypal">
@@ -146,9 +162,9 @@
           <label for="paypal">PayPal</label>
         </div>
 
-        <div class="payment-option" data-method="upi">
-          <input type="radio" name="payment_method" value="upi" id="upi" />
-          <label for="upi">UPI</label>
+        <div class="payment-option" data-method="mpesa">
+          <input type="radio" name="payment_method" value="mpesa" id="mpesa" />
+          <label for="mpesa">M-Pesa</label>
         </div>
 
         <div class="payment-option" data-method="bank_transfer">
@@ -169,6 +185,7 @@
         />
       </div>
 
+      <!-- Place Order -->
       <button
         id="place-order"
         class="btn"
@@ -180,207 +197,268 @@
   </div>
 </section>
 
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
 <script>
-// Address selection functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Address card selection
-    const addressCards = document.querySelectorAll('.address-card');
-    addressCards.forEach(card => {
-        card.addEventListener('click', function() {
-            addressCards.forEach(c => c.classList.remove('selected'));
-            this.classList.add('selected');
-            document.getElementById('shipping_address_id').value = this.dataset.addressId;
-        });
+  // Simple Stripe initialization with direct key
+
+  const stripePublicKey =
+    "<%= env && env.STRIPE_PUBLIC_KEY ? env.STRIPE_PUBLIC_KEY : '' %>";
+
+  console.log("Stripe Key Debug:", {
+    envExists: typeof env !== "undefined",
+    envKey:
+      typeof env !== "undefined" ? env.STRIPE_PUBLIC_KEY : "env not defined",
+    processEnv: process.env
+      ? process.env.STRIPE_PUBLIC_KEY
+      : "process.env not available",
+  });
+
+  let stripe;
+
+  // If the key is empty or undefined, use a test key (replace with your actual key)
+  if (
+    !stripePublicKey ||
+    stripePublicKey === "undefined" ||
+    stripePublicKey === ""
+  ) {
+    console.warn("Using fallback test key - please configure your .env file");
+    // REPLACE THIS WITH YOUR ACTUAL STRIPE TEST PUBLIC KEY
+    stripe = Stripe("pk_test_51Q1Y2rSAcT2gJ6w6x9Q8zR1A7V2mKjX8L9pR6tY..."); // ← Replace with your actual key
+  } else {
+    stripe = Stripe(stripePublicKey);
+  }
+
+  console.log("Stripe initialized successfully");
+
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("Checkout page loaded");
+
+    const addressCards = document.querySelectorAll(".address-card");
+    const paymentOptions = document.querySelectorAll(".payment-option");
+    const shippingInput = document.getElementById("shipping_address_id");
+    const paymentInput = document.getElementById("payment_method");
+    const placeOrderBtn = document.getElementById("place-order");
+
+    // Address selection
+    addressCards.forEach((card) => {
+      card.addEventListener("click", function () {
+        addressCards.forEach((c) => c.classList.remove("selected"));
+        this.classList.add("selected");
+        shippingInput.value = this.dataset.addressId;
+        console.log("Address selected:", this.dataset.addressId);
+      });
     });
 
-    // Payment method selection
-    const paymentOptions = document.querySelectorAll('.payment-option');
-    paymentOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            paymentOptions.forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            const radio = this.querySelector('input[type="radio"]');
-            radio.checked = true;
-            document.getElementById('payment_method').value = radio.value;
-        });
+    // Payment selection
+    paymentOptions.forEach((option) => {
+      option.addEventListener("click", function () {
+        paymentOptions.forEach((o) => o.classList.remove("selected"));
+        this.classList.add("selected");
+        const radio = this.querySelector("input[type=radio]");
+        radio.checked = true;
+        paymentInput.value = radio.value;
+        console.log("Payment method selected:", radio.value);
+      });
     });
 
-    // Place order button
-    const placeOrderBtn = document.getElementById('place-order');
-    if (placeOrderBtn) {
-        placeOrderBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            placeOrder();
+    // Place Order
+    placeOrderBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+
+      console.log("Place order clicked");
+
+      // Show loading state
+      const originalText = placeOrderBtn.textContent;
+      placeOrderBtn.disabled = true;
+      placeOrderBtn.textContent = "Processing...";
+
+      try {
+        const shippingAddressId = shippingInput.value;
+        const paymentMethod = paymentInput.value;
+        const couponCode = document.getElementById("coupon_code").value.trim();
+
+        console.log("Form data:", {
+          shippingAddressId,
+          paymentMethod,
+          couponCode,
         });
-    }
-});
 
-function showAddAddressForm() {
-    document.getElementById('add-address-form').classList.remove('hidden');
-}
+        // Validation
+        if (!shippingAddressId) {
+          alert("Please select a shipping address");
+          throw new Error("No shipping address selected");
+        }
 
-function hideAddAddressForm() {
-    document.getElementById('add-address-form').classList.add('hidden');
-    // Clear form fields
-    document.getElementById('new_country').value = '';
-    document.getElementById('new_state').value = '';
-    document.getElementById('new_city').value = '';
-    document.getElementById('new_street_address').value = '';
-    document.getElementById('new_zip_code').value = '';
-}
+        if (!paymentMethod) {
+          alert("Please select a payment method");
+          throw new Error("No payment method selected");
+        }
 
-function addNewAddress() {
-    const country = document.getElementById('new_country').value;
-    const state = document.getElementById('new_state').value;
-    const city = document.getElementById('new_city').value;
-    const streetAddress = document.getElementById('new_street_address').value;
-    const zipCode = document.getElementById('new_zip_code').value;
-    const addressType = document.getElementById('new_address_type').value;
+        if (paymentMethod === "mpesa") {
+          console.log("Processing M-Pesa payment...");
+          const res = await fetch("/api/orders/place", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shipping_address_id: shippingAddressId,
+              payment_method: paymentMethod,
+              coupon_code: couponCode,
+            }),
+          });
 
-    if (!country || !state || !city || !streetAddress || !zipCode) {
-        alert('Please fill in all address fields');
-        return;
-    }
+          const data = await res.json();
+          console.log("M-Pesa response:", data);
 
-    fetch('/add-address', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            country: country,
-            state: state,
-            city: city,
-            street_address: streetAddress,
-            zip_code: zipCode,
-            address_type: addressType
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Address added successfully!');
-            location.reload(); // Reload to show the new address
+          if (data.success && data.redirect) {
+            console.log("Redirecting to M-Pesa payment:", data.redirect);
+            window.location.href = data.redirect;
+            return;
+          } else {
+            throw new Error(data.message || "M-Pesa payment setup failed");
+          }
+        } else if (paymentMethod === "credit_card") {
+          console.log("Processing Stripe payment...");
+
+          // Stripe Checkout
+          const res = await fetch("/create-checkout-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shipping_address_id: shippingAddressId,
+              coupon_code: couponCode,
+            }),
+          });
+
+          console.log("Server response status:", res.status);
+
+          // Check if response is HTML (error page) instead of JSON
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const text = await res.text();
+            console.error("Non-JSON response:", text.substring(0, 200));
+            throw new Error("Server returned an error page instead of JSON");
+          }
+
+          const data = await res.json();
+          console.log("Server response data:", data);
+
+          if (!res.ok) {
+            throw new Error(data.error || `HTTP error! status: ${res.status}`);
+          }
+
+          if (data.id) {
+            console.log(
+              "Redirecting to Stripe Checkout with session ID:",
+              data.id
+            );
+            const result = await stripe.redirectToCheckout({
+              sessionId: data.id,
+            });
+
+            if (result.error) {
+              console.error("Stripe redirect error:", result.error);
+              throw new Error("Stripe redirect error: " + result.error.message);
+            }
+          } else {
+            throw new Error("No session ID received from server");
+          }
         } else {
-            alert('Error: ' + data.message);
+          // Other payment methods (not M-Pesa or credit card)
+          console.log("Processing other payment method:", paymentMethod);
+          const res = await fetch("/api/orders/place", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shipping_address_id: shippingAddressId,
+              payment_method: paymentMethod,
+              coupon_code: couponCode,
+            }),
+          });
+
+          const data = await res.json();
+          console.log("Server response:", data);
+
+          if (data.success) {
+            if (data.redirect) {
+              console.log("Redirecting to:", data.redirect);
+              window.location.replace(data.redirect);
+              return;
+            } else {
+              alert("Order placed successfully! Order ID: " + data.orderId);
+              window.location.href = "/account?order_success=true";
+            }
+          } else {
+            throw new Error(data.message || "Failed to place order");
+          }
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+      } catch (error) {
+        console.error("Checkout error:", error);
+        alert("Error: " + error.message);
+      } finally {
+        // Reset button state
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = originalText;
+      }
     });
-}
+  });
 
-function placeOrder() {
-    const shippingAddressId = document.getElementById('shipping_address_id').value;
-    const paymentMethod = document.getElementById('payment_method').value;
+  // Show/hide add address form
+  function showAddAddressForm() {
+    document.getElementById("add-address-form").classList.remove("hidden");
+  }
 
-    if (!shippingAddressId) {
-        alert('Please select a shipping address');
-        return;
-    }
+  function hideAddAddressForm() {
+    document.getElementById("add-address-form").classList.add("hidden");
+  }
 
-    if (!paymentMethod) {
-        alert('Please select a payment method');
-        return;
-    }
+  // Add new address function
+  async function addNewAddress() {
+    try {
+      const addressData = {
+        address_type: document.getElementById("new_address_type").value,
+        country: document.getElementById("new_country").value,
+        state: document.getElementById("new_state").value,
+        city: document.getElementById("new_city").value,
+        street_address: document.getElementById("new_street_address").value,
+        zip_code: document.getElementById("new_zip_code").value,
+      };
 
-    fetch('/place-order', {
-        method: 'POST',
+      // Validate required fields
+      for (let key in addressData) {
+        if (!addressData[key]) {
+          alert("Please fill all address fields");
+          return;
+        }
+      }
+
+      const res = await fetch("/add-address", {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-            shipping_address_id: shippingAddressId,
-            payment_method: paymentMethod
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Order placed successfully! Your order ID is: ' + data.orderId);
-            window.location.href = '/account?order_success=true';
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    });
-}
+        body: JSON.stringify(addressData),
+      });
 
-// Add some CSS for better UI
-const style = document.createElement('style');
-style.textContent = `
-    .address-card {
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
+      const result = await res.json();
+
+      if (result.success) {
+        alert("Address added successfully!");
+        location.reload();
+      } else {
+        throw new Error(result.message || "Failed to add address");
+      }
+    } catch (error) {
+      console.error("Address error:", error);
+      alert("Error adding address: " + error.message);
     }
-    
-    .address-card:hover {
-        border-color: #4e73df;
-        background-color: #f8f9fa;
-    }
-    
-    .address-card.selected {
-        border-color: #4e73df;
-        background-color: #e8f4ff;
-    }
-    
-    .payment-option {
-        display: flex;
-        align-items: center;
-        padding: 0.75rem;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-bottom: 0.5rem;
-    }
-    
-    .payment-option:hover {
-        border-color: #4e73df;
-        background-color: #f8f9fa;
-    }
-    
-    .payment-option.selected {
-        border-color: #4e73df;
-        background-color: #e8f4ff;
-    }
-    
-    .payment-option input[type="radio"] {
-        margin-right: 0.5rem;
-    }
-    
-    .hidden {
-        display: none;
-    }
-    
-    .checkout-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-    }
-    
-    .checkout-section {
-        background-color: white;
-        border-radius: 8px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    @media (max-width: 768px) {
-        .checkout-container {
-            grid-template-columns: 1fr;
-        }
-    }
-`;
-document.head.appendChild(style);
+  }
 </script>
 
 <%- include('../partials/footer') %>

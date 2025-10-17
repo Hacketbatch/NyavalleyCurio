@@ -1,0 +1,71 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Orders</h2>
+  <form method="GET" class="mt-2" style="display:flex; gap: .5rem; align-items:center">
+    <input type="text" class="form-control" name="q" value="<%= q || '' %>" placeholder="Search by customer or status..." style="max-width:300px" />
+    <select class="form-control" name="sort" style="max-width:200px">
+      <option value="o.order_date" <%= sort==='o.order_date'?'selected':'' %>>Newest</option>
+      <option value="o.total_amount" <%= sort==='o.total_amount'?'selected':'' %>>Total</option>
+      <option value="o.order_id" <%= sort==='o.order_id'?'selected':'' %>>ID</option>
+      <option value="o.status" <%= sort==='o.status'?'selected':'' %>>Status</option>
+    </select>
+    <select class="form-control" name="dir" style="max-width:120px">
+      <option value="desc" <%= dir==='desc'?'selected':'' %>>Desc</option>
+      <option value="asc" <%= dir==='asc'?'selected':'' %>>Asc</option>
+    </select>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  <div class="account-content mt-2">
+    <% if (orders && orders.length) { %>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% orders.forEach(o => { %>
+          <tr>
+            <td><a href="/admin/orders/<%= o.order_id %>">#<%= o.order_id %></a></td>
+            <td><%= o.name %></td>
+            <td>$<%= Number(o.total_amount).toFixed(2) %></td>
+            <td><%= o.status %></td>
+            <td>
+              <a href="/admin/orders/<%= o.order_id %>" class="btn btn-outline">View</a>
+              <a href="/admin/orders/<%= o.order_id %>/invoice" target="_blank" class="btn btn-outline">Invoice</a>
+              <form action="/admin/orders/<%= o.order_id %>/status" method="POST" style="display:flex; gap: 0.5rem; align-items:center">
+                <select name="status" class="form-control" style="max-width: 180px">
+                  <option <%= o.status==='processing'?'selected':'' %> value="processing">Processing</option>
+                  <option <%= o.status==='shipped'?'selected':'' %> value="shipped">Shipped</option>
+                  <option <%= o.status==='delivered'?'selected':'' %> value="delivered">Delivered</option>
+                  <option <%= o.status==='cancelled'?'selected':'' %> value="cancelled">Cancelled</option>
+                </select>
+                <button class="btn" type="submit">Update</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No orders yet.</p>
+    <% } %>
+  </div>
+  <% if (totalPages && totalPages > 1) { %>
+  <div class="mt-2" style="display:flex; gap:.5rem; flex-wrap:wrap">
+    <% for (let i=1;i<=totalPages;i++){ %>
+      <a class="btn btn-outline" href="?page=<%= i %>&q=<%= q||'' %>&sort=<%= sort %>&dir=<%= dir %>"><%= i %></a>
+    <% } %>
+  </div>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>
+
+
+

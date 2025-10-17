@@ -1,0 +1,64 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Coupons</h2>
+  <form method="GET" class="mt-2" style="display:flex; gap:.5rem; align-items:center">
+    <input type="text" class="form-control" name="q" value="<%= q || '' %>" placeholder="Search code..." style="max-width:300px" />
+    <button class="btn" type="submit">Search</button>
+  </form>
+  <div class="mt-2">
+    <a href="/admin/coupons/new" class="btn">Add Coupon</a>
+  </div>
+  <div class="account-content mt-2">
+    <% if (coupons && coupons.length) { %>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Type</th>
+            <th>Value</th>
+            <th>Min Order</th>
+            <th>Max Uses</th>
+            <th>Used</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% coupons.forEach(c => { %>
+            <tr>
+              <td><%= c.code %></td>
+              <td><%= c.type %></td>
+              <td><%= c.value %></td>
+              <td><%= c.min_order %></td>
+              <td><%= c.max_uses || '-' %></td>
+              <td><%= c.used_count %></td>
+              <td><%= c.active ? 'Yes' : 'No' %></td>
+              <td>
+                <a class="btn btn-outline" href="/admin/coupons/<%= c.coupon_id %>/edit">Edit</a>
+                <form action="/admin/coupons/<%= c.coupon_id %>/delete" method="POST" style="display:inline">
+                  <button class="btn" onclick="return confirm('Delete coupon?')">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No coupons found.</p>
+    <% } %>
+  </div>
+  <% if (totalPages && totalPages > 1) { %>
+  <div class="mt-2" style="display:flex; gap:.5rem; flex-wrap:wrap">
+    <% for (let i=1;i<=totalPages;i++){ %>
+      <a class="btn btn-outline" href="?page=<%= i %>&q=<%= q||'' %>"><%= i %></a>
+    <% } %>
+  </div>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>
+
+
+
+

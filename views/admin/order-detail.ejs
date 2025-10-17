@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Order #<%= order.order_id %></h2>
+  <div class="account-content">
+    <div class="order-header">
+      <div>
+        <div><strong>Date:</strong> <%= order.order_date.toISOString().slice(0,19).replace('T',' ') %></div>
+        <div><strong>Status:</strong> <%= order.status %></div>
+        <div><strong>Total:</strong> $<%= Number(order.total_amount).toFixed(2) %></div>
+        <div class="mt-1"><a class="btn btn-outline" href="/admin/orders/<%= order.order_id %>/invoice" target="_blank">Print Invoice</a></div>
+      </div>
+      <div>
+        <div><strong>Customer:</strong> <%= order.customer_name %> (<%= order.email %>)</div>
+        <div><strong>Ship to:</strong> <%= order.street_address %>, <%= order.city %>, <%= order.state %>, <%= order.country %> <%= order.zip_code %></div>
+      </div>
+    </div>
+
+    <h3 class="mt-2">Items</h3>
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Price</th>
+          <th>Qty</th>
+          <th>Line total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach(i => { %>
+          <tr>
+            <td><%= i.product_name %></td>
+            <td>$<%= Number(i.price_at_time_of_sale).toFixed(2) %></td>
+            <td><%= i.quantity %></td>
+            <td>$<%= Number(i.price_at_time_of_sale * i.quantity).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>
+
+

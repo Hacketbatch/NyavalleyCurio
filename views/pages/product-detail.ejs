@@ -37,7 +37,10 @@
         $<%= product.price.toFixed(2) %>
       </p>
 
-      <div class="product-description" style="margin-bottom: 2rem">
+      <div
+        class="product-description"
+        style="margin-bottom: 2rem; -webkit-line-clamp: 3"
+      >
         <h3>Description</h3>
         <p><%= product.description %></p>
       </div>

@@ -1,0 +1,65 @@
+<%- include('../partials/header') %>
+
+<section class="mb-4">
+  <h2 class="section-title">Users</h2>
+  <form method="GET" class="mt-2" style="display:flex; gap: .5rem; align-items:center">
+    <input type="text" class="form-control" name="q" value="<%= q || '' %>" placeholder="Search name, email or role..." style="max-width:300px" />
+    <select class="form-control" name="sort" style="max-width:200px">
+      <option value="created_at" <%= sort==='created_at'?'selected':'' %>>Newest</option>
+      <option value="name" <%= sort==='name'?'selected':'' %>>Name</option>
+      <option value="email" <%= sort==='email'?'selected':'' %>>Email</option>
+      <option value="role" <%= sort==='role'?'selected':'' %>>Role</option>
+      <option value="user_id" <%= sort==='user_id'?'selected':'' %>>ID</option>
+    </select>
+    <select class="form-control" name="dir" style="max-width:120px">
+      <option value="desc" <%= dir==='desc'?'selected':'' %>>Desc</option>
+      <option value="asc" <%= dir==='asc'?'selected':'' %>>Asc</option>
+    </select>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  <div class="account-content mt-2">
+    <% if (users && users.length) { %>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% users.forEach(u => { %>
+          <tr>
+            <td><%= u.user_id %></td>
+            <td><%= u.name %></td>
+            <td><%= u.email %></td>
+            <td><%= u.role %></td>
+            <td>
+              <form action="/admin/users/<%= u.user_id %>/block" method="POST" style="display:inline">
+                <input type="hidden" name="block" value="<%= u.role === 'blocked' ? 'false' : 'true' %>">
+                <button type="submit" class="btn"><%= u.role === 'blocked' ? 'Unblock' : 'Block' %></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No users found.</p>
+    <% } %>
+  </div>
+  <% if (totalPages && totalPages > 1) { %>
+  <div class="mt-2" style="display:flex; gap:.5rem; flex-wrap:wrap">
+    <% for (let i=1;i<=totalPages;i++){ %>
+      <a class="btn btn-outline" href="?page=<%= i %>&q=<%= q||'' %>&sort=<%= sort %>&dir=<%= dir %>"><%= i %></a>
+    <% } %>
+  </div>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>
+
+
+

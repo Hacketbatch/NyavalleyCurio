@@ -1,0 +1,51 @@
+<% /* Global alerts partial: supports single strings or arrays for error/success/warning/info */ %>
+
+<% const toArray = (val) => Array.isArray(val) ? val : (val ? [val] : []); %>
+
+<% const errorList = toArray(typeof errors !== 'undefined' ? errors : (typeof error !== 'undefined' ? error : null)); %>
+<% const successList = toArray(typeof successes !== 'undefined' ? successes : (typeof success !== 'undefined' ? success : null)); %>
+<% const warningList = toArray(typeof warnings !== 'undefined' ? warnings : (typeof warning !== 'undefined' ? warning : null)); %>
+<% const infoList = toArray(typeof infos !== 'undefined' ? infos : (typeof info !== 'undefined' ? info : null)); %>
+
+<% if (errorList.length) { %>
+  <% errorList.forEach(function(msg) { %>
+    <div class="alert alert-error" role="alert">
+      <span class="alert-icon" aria-hidden="true">⚠️</span>
+      <div class="alert-content"><%= msg %></div>
+      <button type="button" class="alert-close" aria-label="Close">×</button>
+    </div>
+  <% }) %>
+<% } %>
+
+<% if (successList.length) { %>
+  <% successList.forEach(function(msg) { %>
+    <div class="alert alert-success" role="status">
+      <span class="alert-icon" aria-hidden="true">✅</span>
+      <div class="alert-content"><%= msg %></div>
+      <button type="button" class="alert-close" aria-label="Close">×</button>
+    </div>
+  <% }) %>
+<% } %>
+
+<% if (warningList.length) { %>
+  <% warningList.forEach(function(msg) { %>
+    <div class="alert alert-warning" role="alert">
+      <span class="alert-icon" aria-hidden="true">⚠️</span>
+      <div class="alert-content"><%= msg %></div>
+      <button type="button" class="alert-close" aria-label="Close">×</button>
+    </div>
+  <% }) %>
+<% } %>
+
+<% if (infoList.length) { %>
+  <% infoList.forEach(function(msg) { %>
+    <div class="alert alert-info" role="status">
+      <span class="alert-icon" aria-hidden="true">ℹ️</span>
+      <div class="alert-content"><%= msg %></div>
+      <button type="button" class="alert-close" aria-label="Close">×</button>
+    </div>
+  <% }) %>
+<% } %>
+
+
+

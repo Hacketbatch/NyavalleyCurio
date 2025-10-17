@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoice #<%= order.order_id %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      @media print {
+        header, footer, .btn { display: none !important; }
+        body { background: #fff; }
+        .invoice { box-shadow: none !important; }
+      }
+      .invoice { max-width: 900px; margin: 20px auto; background:#fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .invoice-header { display:flex; justify-content:space-between; align-items:flex-start; }
+      .invoice-title { font-size: 1.5rem; font-weight: 600; }
+      .muted { color:#6c757d; }
+      .invoice-actions { margin: 10px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="invoice">
+      <div class="invoice-header">
+        <div>
+          <div class="invoice-title">Nyavalley Curio Shop</div>
+          <div class="muted">Invoice #<%= order.order_id %></div>
+          <div class="muted">Date: <%= order.order_date.toISOString().slice(0,19).replace('T',' ') %></div>
+        </div>
+        <div>
+          <div><strong>Bill/Ship To</strong></div>
+          <div><%= order.customer_name %> (<%= order.email %>)</div>
+          <div><%= order.street_address %></div>
+          <div><%= order.city %>, <%= order.state %></div>
+          <div><%= order.country %> <%= order.zip_code %></div>
+        </div>
+      </div>
+
+      <div class="invoice-actions">
+        <button class="btn" onclick="window.print()">Print</button>
+      </div>
+
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Line total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% let subtotal = 0; %>
+          <% items.forEach(i => { const lt = Number(i.price_at_time_of_sale) * i.quantity; subtotal += lt; %>
+          <tr>
+            <td><%= i.product_name %></td>
+            <td>$<%= Number(i.price_at_time_of_sale).toFixed(2) %></td>
+            <td><%= i.quantity %></td>
+            <td>$<%= lt.toFixed(2) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <div style="text-align:right; margin-top: 10px;">
+        <div>Subtotal: $<%= subtotal.toFixed(2) %></div>
+        <div><strong>Total: $<%= Number(order.total_amount).toFixed(2) %></strong></div>
+      </div>
+
+      <p class="muted" style="margin-top: 20px;">Thank you for shopping with us.</p>
+    </div>
+  </body>
+  </html>
+
+

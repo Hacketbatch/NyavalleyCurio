@@ -23,6 +23,20 @@ function initializeDatabase(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
 
+    `CREATE TABLE IF NOT EXISTS coupons (
+            coupon_id INT AUTO_INCREMENT PRIMARY KEY,
+            code VARCHAR(64) NOT NULL UNIQUE,
+            type ENUM('percent','fixed') NOT NULL,
+            value DECIMAL(10,2) NOT NULL,
+            min_order DECIMAL(10,2) NOT NULL DEFAULT 0,
+            max_uses INT NULL,
+            used_count INT NOT NULL DEFAULT 0,
+            active BOOLEAN NOT NULL DEFAULT TRUE,
+            valid_from DATETIME NULL,
+            valid_to DATETIME NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+
     `CREATE TABLE IF NOT EXISTS categories (
             category_id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL UNIQUE,

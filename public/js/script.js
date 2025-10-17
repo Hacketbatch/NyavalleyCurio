@@ -71,6 +71,14 @@ document.addEventListener("DOMContentLoaded", function () {
       placeOrder();
     });
   }
+
+  // Dismissible alerts
+  document.querySelectorAll(".alert .alert-close").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const alert = this.closest(".alert");
+      if (alert) alert.remove();
+    });
+  });
 });
 
 // Update cart count
@@ -189,7 +197,7 @@ function placeOrder() {
     return;
   }
 
-  fetch("/place-order", {
+  fetch("/api/orders/place", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -202,6 +210,10 @@ function placeOrder() {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
+        if (data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
         alert("Order placed successfully! Your order ID is: " + data.orderId);
         window.location.href = "/account?order_success=true";
       } else {

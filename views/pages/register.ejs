@@ -3,9 +3,7 @@
 <section class="mb-4" style="max-width: 400px; margin: 0 auto">
   <h2 class="section-title">Create Account</h2>
 
-  <% if (error) { %>
-  <div class="alert alert-error"><%= error %></div>
-  <% } %>
+  <% /* Alerts handled globally by partial in header */ %>
 
   <form action="/register" method="POST">
     <div class="form-group">

@@ -6,6 +6,10 @@ const mysql = require("mysql");
 const bcrypt = require("bcrypt");
 const utils = require("./utils");
 const sqlStatements = require("./sqlStatements");
+const adminRoutes = require("./routes/admin");
+const mpesaRoutes = require("./routes/mpesa");
+require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -26,6 +30,16 @@ app.use(
 // Make user session available to all views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
+  next();
+});
+
+// Make environment variables available to views
+app.use((req, res, next) => {
+  // Pass specific environment variables to views
+  res.locals.env = {
+    STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY || "",
+    BASE_URL: process.env.BASE_URL || "http://localhost:3001",
+  };
   next();
 });
 
@@ -58,6 +72,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Enforce blocked users cannot stay logged in
+app.use((req, res, next) => {
+  if (req.session && req.session.user && req.session.user.role === "blocked") {
+    req.session.destroy(() => {
+      return res.redirect("/login?blocked=1");
+    });
+  } else {
+    next();
+  }
+});
+
+// Middleware to fetch cart item count for logged-in users
 app.use((req, res, next) => {
   if (req.session.user) {
     const userId = req.session.user.user_id;
@@ -81,6 +107,9 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use("/admin", adminRoutes);
+app.use("/api/mpesa", utils.requireLogin, mpesaRoutes);
+app.use("/api/orders", require("./routes/orders"));
 app.get("/", (req, res) => {
   const featuredProductsQuery = `
         SELECT p.*, c.name as category_name 
@@ -430,160 +459,120 @@ app.get("/checkout", utils.requireLogin, (req, res) => {
   });
 });
 
-app.post("/place-order", utils.requireLogin, (req, res) => {
+app.post("/create-checkout-session", utils.requireLogin, async (req, res) => {
   const userId = req.session.user.user_id;
-  const { shipping_address_id, payment_method } = req.body;
+  const { shipping_address_id, coupon_code } = req.body;
 
-  // Start transaction
-  req.db.beginTransaction(async (err) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: "Server Error" });
+  console.log("=== STRIPE CHECKOUT SESSION REQUEST ===");
+  console.log("User ID:", userId);
+  console.log("Shipping Address ID:", shipping_address_id);
+  console.log("Coupon Code:", coupon_code);
+  console.log("Stripe Key Present:", !!process.env.STRIPE_SECRET_KEY);
+
+  try {
+    // Validate shipping address
+    if (!shipping_address_id) {
+      console.log("Error: No shipping address selected");
+      return res.status(400).json({ error: "Shipping address is required" });
     }
 
-    try {
-      // Get cart items with current prices
-      const cartQuery = `
-                SELECT ci.product_id, ci.quantity, p.price 
-                FROM cart_items ci 
-                JOIN products p ON ci.product_id = p.product_id 
-                WHERE ci.user_id = ?
-            `;
+    const cartQuery = `
+      SELECT p.name, p.price, ci.quantity, p.image_url
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.product_id
+      WHERE ci.user_id = ?`;
 
-      req.db.query(cartQuery, [userId], (err, cartItems) => {
-        if (err) {
-          return req.db.rollback(() => {
-            console.error(err);
-            res.status(500).json({ success: false, message: "Server Error" });
-          });
-        }
+    req.db.query(cartQuery, [userId], async (err, cartItems) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Server Error" });
+      }
 
-        if (cartItems.length === 0) {
-          return req.db.rollback(() => {
-            res.status(400).json({ success: false, message: "Cart is empty" });
-          });
-        }
+      if (!cartItems || cartItems.length === 0) {
+        console.log("Error: Cart is empty");
+        return res.status(400).json({ error: "Cart is empty" });
+      }
 
-        // Calculate total
-        let total = 0;
-        cartItems.forEach((item) => {
-          total += item.price * item.quantity;
+      console.log("Cart items:", cartItems);
+
+      try {
+        const line_items = cartItems.map((item) => ({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.name,
+              images: item.image_url ? [item.image_url] : [],
+            },
+            unit_amount: Math.round(item.price * 100),
+          },
+          quantity: item.quantity,
+        }));
+
+        console.log("Line items created:", line_items);
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items,
+          mode: "payment",
+          shipping_address_collection: {
+            allowed_countries: ["US", "CA", "GB", "IN"],
+          },
+          success_url: `${
+            process.env.BASE_URL || "http://localhost:3001"
+          }/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${
+            process.env.BASE_URL || "http://localhost:3001"
+          }/checkout`,
+          metadata: {
+            user_id: String(userId),
+            shipping_address_id: String(shipping_address_id),
+            coupon_code: coupon_code || "",
+          },
+          customer_email: req.session.user.email,
         });
 
-        // Create order
-        const orderQuery = `
-                    INSERT INTO orders (user_id, total_amount, shipping_address_id, status) 
-                    VALUES (?, ?, ?, 'processing')
-                `;
+        console.log("Stripe session created:", session.id);
 
-        req.db.query(
-          orderQuery,
-          [userId, total, shipping_address_id],
-          (err, result) => {
-            if (err) {
-              return req.db.rollback(() => {
-                console.error(err);
-                res
-                  .status(500)
-                  .json({ success: false, message: "Server Error" });
-              });
-            }
-
-            const orderId = result.insertId;
-
-            // Add order items
-            const orderItemsQuery = `
-                        INSERT INTO order_items (order_id, product_id, quantity, price_at_time_of_sale) 
-                        VALUES ?
-                    `;
-
-            const orderItemsValues = cartItems.map((item) => [
-              orderId,
-              item.product_id,
-              item.quantity,
-              item.price,
-            ]);
-
-            req.db.query(orderItemsQuery, [orderItemsValues], (err) => {
-              if (err) {
-                return req.db.rollback(() => {
-                  console.error(err);
-                  res
-                    .status(500)
-                    .json({ success: false, message: "Server Error" });
-                });
-              }
-
-              // Create payment record
-              const paymentQuery = `
-                            INSERT INTO payments (order_id, amount, payment_method, payment_status) 
-                            VALUES (?, ?, ?, 'pending')
-                        `;
-
-              req.db.query(
-                paymentQuery,
-                [orderId, total, payment_method],
-                (err) => {
-                  if (err) {
-                    return req.db.rollback(() => {
-                      console.error(err);
-                      res
-                        .status(500)
-                        .json({ success: false, message: "Server Error" });
-                    });
-                  }
-
-                  // Clear cart
-                  const clearCartQuery =
-                    "DELETE FROM cart_items WHERE user_id = ?";
-                  req.db.query(clearCartQuery, [userId], (err) => {
-                    if (err) {
-                      return req.db.rollback(() => {
-                        console.error(err);
-                        res
-                          .status(500)
-                          .json({ success: false, message: "Server Error" });
-                      });
-                    }
-
-                    // Commit transaction
-                    req.db.commit((err) => {
-                      if (err) {
-                        return req.db.rollback(() => {
-                          console.error(err);
-                          res
-                            .status(500)
-                            .json({ success: false, message: "Server Error" });
-                        });
-                      }
-
-                      res.json({
-                        success: true,
-                        message: "Order placed successfully",
-                        orderId: orderId,
-                      });
-                    });
-                  });
-                }
-              );
-            });
-          }
-        );
-      });
-    } catch (error) {
-      req.db.rollback(() => {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Server Error" });
-      });
-    }
-  });
+        // Return session ID for redirectToCheckout
+        res.json({ id: session.id });
+      } catch (stripeError) {
+        console.error("Stripe error:", stripeError);
+        res.status(500).json({ error: "Stripe error: " + stripeError.message });
+      }
+    });
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
+app.get("/payment-success", utils.requireLogin, async (req, res) => {
+  const sessionId = req.query.session_id;
+  if (!sessionId) return res.redirect("/");
+
+  try {
+    const session = await mpesa.checkout.sessions.retrieve(sessionId);
+    // Optional: fetch line items or payment intent for more details
+    // You can use metadata from the session to create the order here
+
+    // Render a confirmation page (create payment-success.ejs)
+    res.render("pages/payment-success", { session });
+  } catch (e) {
+    console.error(e);
+    res.redirect("/checkout");
+  }
+});
+
+// All order related routes have been moved to routes/orders.js
 
 app.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect("/account");
   }
-  res.render("pages/login", { error: null });
+  const error = req.query.blocked
+    ? "Your account has been blocked. Please contact support."
+    : null;
+  res.render("pages/login", { error });
 });
 
 app.post("/login", (req, res) => {
@@ -601,6 +590,11 @@ app.post("/login", (req, res) => {
     }
 
     const user = results[0];
+    if (user.role === "blocked") {
+      return res.status(403).render("pages/login", {
+        error: "Your account has been blocked. Please contact support.",
+      });
+    }
 
     try {
       const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -611,10 +605,15 @@ app.post("/login", (req, res) => {
       }
 
       // Set user session
+      const isAdmin =
+        (user && (user.is_admin === 1 || user.is_admin === true)) ||
+        (user && user.role === "admin");
       req.session.user = {
         user_id: user.user_id,
         name: user.name,
         email: user.email,
+        is_admin: !!isAdmin,
+        role: user.role || (isAdmin ? "admin" : "customer"),
       };
 
       res.redirect("/account");
@@ -783,178 +782,17 @@ app.post("/add-address", utils.requireLogin, (req, res) => {
   );
 });
 
-app.post("/add-address", utils.requireLogin, (req, res) => {
-  const userId = req.session.user.user_id;
-  const { country, state, city, street_address, zip_code, address_type } =
-    req.body;
 
-  const query = `
-        INSERT INTO addresses (user_id, country, state, city, street_address, zip_code, address_type) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
 
-  req.db.query(
-    query,
-    [userId, country, state, city, street_address, zip_code, address_type],
-    (err, result) => {
-      if (err) {
-        console.error(err);
-        return res
-          .status(500)
-          .json({ success: false, message: "Server Error" });
-      }
-
-      res.json({ success: true, message: "Address added successfully" });
-    }
-  );
-});
-
-app.post("/place-order", utils.requireLogin, (req, res) => {
-  const userId = req.session.user.user_id;
-  const { shipping_address_id, payment_method } = req.body;
-
-  // Start transaction
-  req.db.beginTransaction(async (err) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: "Server Error" });
-    }
-
-    try {
-      // Get cart items with current prices
-      const cartQuery = `
-                SELECT ci.product_id, ci.quantity, p.price 
-                FROM cart_items ci 
-                JOIN products p ON ci.product_id = p.product_id 
-                WHERE ci.user_id = ?
-            `;
-
-      req.db.query(cartQuery, [userId], (err, cartItems) => {
-        if (err) {
-          return req.db.rollback(() => {
-            console.error(err);
-            res.status(500).json({ success: false, message: "Server Error" });
-          });
-        }
-
-        if (cartItems.length === 0) {
-          return req.db.rollback(() => {
-            res.status(400).json({ success: false, message: "Cart is empty" });
-          });
-        }
-
-        // Calculate total
-        let total = 0;
-        cartItems.forEach((item) => {
-          total += item.price * item.quantity;
-        });
-
-        // Create order
-        const orderQuery = `
-                    INSERT INTO orders (user_id, total_amount, shipping_address_id, status) 
-                    VALUES (?, ?, ?, 'processing')
-                `;
-
-        req.db.query(
-          orderQuery,
-          [userId, total, shipping_address_id],
-          (err, result) => {
-            if (err) {
-              return req.db.rollback(() => {
-                console.error(err);
-                res
-                  .status(500)
-                  .json({ success: false, message: "Server Error" });
-              });
-            }
-
-            const orderId = result.insertId;
-
-            // Add order items
-            const orderItemsQuery = `
-                        INSERT INTO order_items (order_id, product_id, quantity, price_at_time_of_sale) 
-                        VALUES ?
-                    `;
-
-            const orderItemsValues = cartItems.map((item) => [
-              orderId,
-              item.product_id,
-              item.quantity,
-              item.price,
-            ]);
-
-            req.db.query(orderItemsQuery, [orderItemsValues], (err) => {
-              if (err) {
-                return req.db.rollback(() => {
-                  console.error(err);
-                  res
-                    .status(500)
-                    .json({ success: false, message: "Server Error" });
-                });
-              }
-
-              // Create payment record
-              const paymentQuery = `
-                            INSERT INTO payments (order_id, amount, payment_method, payment_status) 
-                            VALUES (?, ?, ?, 'pending')
-                        `;
-
-              req.db.query(
-                paymentQuery,
-                [orderId, total, payment_method],
-                (err) => {
-                  if (err) {
-                    return req.db.rollback(() => {
-                      console.error(err);
-                      res
-                        .status(500)
-                        .json({ success: false, message: "Server Error" });
-                    });
-                  }
-
-                  // Clear cart
-                  const clearCartQuery =
-                    "DELETE FROM cart_items WHERE user_id = ?";
-                  req.db.query(clearCartQuery, [userId], (err) => {
-                    if (err) {
-                      return req.db.rollback(() => {
-                        console.error(err);
-                        res
-                          .status(500)
-                          .json({ success: false, message: "Server Error" });
-                      });
-                    }
-
-                    // Commit transaction
-                    req.db.commit((err) => {
-                      if (err) {
-                        return req.db.rollback(() => {
-                          console.error(err);
-                          res
-                            .status(500)
-                            .json({ success: false, message: "Server Error" });
-                        });
-                      }
-
-                      res.json({
-                        success: true,
-                        message: "Order placed successfully",
-                        orderId: orderId,
-                      });
-                    });
-                  });
-                }
-              );
-            });
-          }
-        );
-      });
-    } catch (error) {
-      req.db.rollback(() => {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Server Error" });
-      });
-    }
+// Debug endpoint to check environment variables
+app.get("/debug-env", (req, res) => {
+  res.json({
+    STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY || "NOT SET",
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY
+      ? "SET (hidden)"
+      : "NOT SET",
+    BASE_URL: process.env.BASE_URL || "NOT SET",
+    NODE_ENV: process.env.NODE_ENV || "NOT SET",
   });
 });
 

@@ -1,34 +1,7 @@
 <%- include('../partials/header') %>
 
-<section
-  class="hero"
-  style="
-    /* background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); */
-    background: #d4af37;
-    color: white;
-    padding: 4rem 0;
-    text-align: center;
-    margin-bottom: 3rem;
-    clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
-  "
->
-  <video
-    autoplay
-    muted
-    loop
-    playsinline
-    class="hero-video"
-    style="
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover; /* ensures video covers background */
-      z-index: -2;
-      mix-blend-mode: darken;
-    "
-  >
+<section class="hero">
+  <video autoplay muted loop playsinline class="hero-video">
     <source src="/images/carving.mp4" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
@@ -103,7 +76,7 @@
       </div>
       <h3>Jewelry</h3>
       <p>Necklaces, bangles, and earrings</p>
-      <a href="/products?category=4" class="btn btn-outline">Browse Jewelry</a>
+      <a href="/products?category=2" class="btn btn-outline">Browse Jewelry</a>
     </div>
 
     <div
@@ -120,9 +93,9 @@
       <div class="img">
         <img src="/images/bags.jpg" alt="" />
       </div>
-      <h3>African Attires</h3>
-      <p>Traditional clothing and accessories</p>
-      <a href="/products?category=11" class="btn btn-outline">Browse Attires</a>
+      <h3>Bags</h3>
+      <p>Carry your world effortlessly</p>
+      <a href="/products?category=3" class="btn btn-outline">Browse Bags</a>
     </div>
 
     <div
@@ -141,7 +114,7 @@
       </div>
       <h3>Paintings</h3>
       <p>African art and wildlife paintings</p>
-      <a href="/products?category=17" class="btn btn-outline"
+      <a href="/products?category=5" class="btn btn-outline"
         >Browse Paintings</a
       >
     </div>
@@ -171,10 +144,31 @@
             class="btn add-to-cart"
             data-product-id="<%= product.product_id %>"
           >
-            Add to Cart
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24px"
+              viewBox="0 -960 960 960"
+              width="24px"
+              fill="#FFFFFF"
+            >
+              <path
+                d="M280-80q-33 0-56.5-23.5T200-160q0-33 23.5-56.5T280-240q33 0 56.5 23.5T360-160q0 33-23.5 56.5T280-80Zm400 0q-33 0-56.5-23.5T600-160q0-33 23.5-56.5T680-240q33 0 56.5 23.5T760-160q0 33-23.5 56.5T680-80ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z"
+              />
+            </svg>
           </button>
           <% } else { %>
-          <a href="/login" class="btn">Login to Purchase</a>
+          <a href="/login" class="btn"
+            ><svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24px"
+              viewBox="0 -960 960 960"
+              width="24px"
+              fill="#FFFFFF"
+            >
+              <path
+                d="M280-80q-33 0-56.5-23.5T200-160q0-33 23.5-56.5T280-240q33 0 56.5 23.5T360-160q0 33-23.5 56.5T280-80Zm400 0q-33 0-56.5-23.5T600-160q0-33 23.5-56.5T680-240q33 0 56.5 23.5T760-160q0 33-23.5 56.5T680-80ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z"
+              /></svg
+          ></a>
           <% } %>
         </div>
       </div>
