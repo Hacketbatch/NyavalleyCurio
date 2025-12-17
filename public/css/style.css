@@ -37,7 +37,7 @@ main.container {
 /* Ensure header/footer content is centered within a readable width */
 header > .container,
 footer > .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
   width: 100%;
@@ -65,10 +65,12 @@ header {
 
 .logo {
   width: auto;
+  padding-top: 2.6em;
 }
 .logo img {
-  width: 200px;
+  width: 130px;
   height: auto;
+  border-radius: 50%;
 }
 
 .nav-links {
@@ -194,6 +196,8 @@ header {
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 2rem;
   margin-bottom: 3rem;
+  width: 97%;
+  margin: auto;
 }
 
 .product-card {

@@ -95,6 +95,7 @@ function updateCartCount() {
 }
 
 // Add product to cart
+// Add product to cart
 function addToCart(productId, quantity = 1) {
   fetch("/add-to-cart", {
     method: "POST",
@@ -109,17 +110,22 @@ function addToCart(productId, quantity = 1) {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
-        alert("Product added to cart!");
+        alert("✅ Product added to cart!");
         updateCartCount();
+        // Reload the page after a short delay so user sees alert
+        setTimeout(() => {
+          location.reload();
+        }, 300);
       } else {
-        alert("Error: " + data.message);
+        alert("⚠️ Error: " + data.message);
       }
     })
     .catch((error) => {
       console.error("Error:", error);
-      alert("An error occurred. Please try again.");
+      alert("❌ An error occurred. Please try again.");
     });
 }
+
 
 // Update cart quantity
 function updateCartQuantity(productId, quantity) {

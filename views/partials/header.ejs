@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>E-Commerce Store</title>
     <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/about.css" />
   </head>
   <body>
     <header>
@@ -17,6 +18,10 @@
           <ul class="nav-links">
             <li><a href="/">Home</a></li>
             <li><a href="/products">Products</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+          <ul class="nav-links">
             <% if (user && (user.is_admin || user.role === 'admin')) { %>
             <li><a href="/admin">Admin</a></li>
             <% } %> <% if (user) { %>
@@ -47,5 +52,27 @@
       </div>
     </header>
     <main class="container"><%- include('../partials/alerts') %></main>
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const cartCountElement = document.querySelector(".cart-count");
+
+  async function refreshCartCount() {
+    try {
+      const res = await fetch("/cart/count");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && cartCountElement) {
+        cartCountElement.textContent = data.count;
+      }
+    } catch (err) {
+      console.error("Error refreshing cart count:", err);
+    }
+  }
+
+  // Listen for custom event from product pages
+  window.addEventListener("cart-updated", refreshCartCount);
+});
+</script>
+
   </body>
 </html>

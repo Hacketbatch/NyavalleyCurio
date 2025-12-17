@@ -100,7 +100,7 @@ function postEditProduct(req, res) {
 function deleteProduct(req, res) {
   const id = req.params.id;
   req.db.query("DELETE FROM products WHERE product_id = ?", [id], (err) => {
-    if (err) return res.status(500).render("errors/500", { error: "Server error" });
+    if (err) return res.status(500).render("errors/500", { error: "Server error"+err });
     res.redirect("/admin/products");
   });
 }

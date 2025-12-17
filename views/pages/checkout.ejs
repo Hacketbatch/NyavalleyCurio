@@ -89,6 +89,12 @@
       </div>
     </div>
 
+    <!-- Shipping Cost Section -->
+    <div id="shipping-cost-section" class="form-group" style="margin-top: 1rem">
+      <h4>Shipping</h4>
+      <p id="shipping-cost">Select an address to calculate shipping...</p>
+    </div>
+
     <!-- Order Summary -->
     <div class="checkout-section">
       <h3>Order Summary</h3>
@@ -115,15 +121,13 @@
         <% }); %>
       </div>
 
-      <div
-        style="
-          text-align: right;
-          font-size: 1.2rem;
-          font-weight: bold;
-          margin: 1.5rem 0;
-        "
-      >
-        Total: $<%= total.toFixed(2) %>
+      <div style="text-align: right; margin-top: 1.5rem">
+        <p>Subtotal: $<span id="subtotal"><%= total.toFixed(2) %></span></p>
+        <p>Shipping: $<span id="shipping-amount">0.00</span></p>
+        <hr />
+        <p style="font-size: 1.2rem; font-weight: bold">
+          Total: $<span id="grand-total"><%= total.toFixed(2) %></span>
+        </p>
       </div>
 
       <!-- Coupon -->
@@ -240,6 +244,34 @@
     const paymentInput = document.getElementById("payment_method");
     const placeOrderBtn = document.getElementById("place-order");
 
+    let shippingCost = 0;
+    let subtotal = parseFloat(document.getElementById("subtotal").textContent);
+
+    async function fetchShippingCost(addressId) {
+      try {
+        const res = await fetch(`/api/shipping/rates?address_id=${addressId}`);
+        const data = await res.json();
+        if (data.success) {
+          shippingCost = parseFloat(data.rate);
+          document.getElementById("shipping-amount").textContent =
+            shippingCost.toFixed(2);
+          updateGrandTotal();
+        } else {
+          throw new Error(data.message || "Failed to fetch shipping rate");
+        }
+      } catch (err) {
+        console.error("Shipping cost error:", err);
+        document.getElementById("shipping-cost").textContent =
+          "Error fetching cost";
+      }
+    }
+
+    function updateGrandTotal() {
+      const grandTotal = subtotal + shippingCost;
+      document.getElementById("grand-total").textContent =
+        grandTotal.toFixed(2);
+    }
+
     // Address selection
     addressCards.forEach((card) => {
       card.addEventListener("click", function () {
@@ -247,6 +279,7 @@
         this.classList.add("selected");
         shippingInput.value = this.dataset.addressId;
         console.log("Address selected:", this.dataset.addressId);
+        fetchShippingCost(this.dataset.addressId); // ✅ Fetch rate dynamically
       });
     });
 
@@ -306,6 +339,7 @@
               shipping_address_id: shippingAddressId,
               payment_method: paymentMethod,
               coupon_code: couponCode,
+              shipping_cost: shippingCost, // ✅ include shipping cost
             }),
           });
 
