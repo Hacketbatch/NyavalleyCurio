@@ -346,6 +346,57 @@
       });
     });
   });
+
+  // Show/hide add address form
+  function showAddAddressForm() {
+    document.getElementById("add-address-form").classList.remove("hidden");
+  }
+
+  function hideAddAddressForm() {
+    document.getElementById("add-address-form").classList.add("hidden");
+  }
+
+  // Add new address function
+  async function addNewAddress() {
+    try {
+      const addressData = {
+        address_type: document.getElementById("new_address_type").value,
+        country: document.getElementById("new_country").value,
+        state: document.getElementById("new_state").value,
+        city: document.getElementById("new_city").value,
+        street_address: document.getElementById("new_street_address").value,
+        zip_code: document.getElementById("new_zip_code").value,
+      };
+
+      // Validate required fields
+      for (let key in addressData) {
+        if (!addressData[key]) {
+          alert("Please fill all address fields");
+          return;
+        }
+      }
+
+      const res = await fetch("/add-address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        alert("Address added successfully!");
+        location.reload();
+      } else {
+        throw new Error(result.message || "Failed to add address");
+      }
+    } catch (error) {
+      console.error("Address error:", error);
+      alert("Error adding address: " + error.message);
+    }
+  }
 </script>
 
 <%- include('../partials/footer') %>
