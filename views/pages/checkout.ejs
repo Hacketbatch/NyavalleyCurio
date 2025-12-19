@@ -50,7 +50,6 @@
         "
       >
         <h4>Add New Address</h4>
-
         <div class="form-group">
           <label class="form-label">Address Type</label>
           <select id="new_address_type" class="form-control">
@@ -58,37 +57,31 @@
             <option value="billing">Billing</option>
           </select>
         </div>
-
         <div class="form-group">
-          <label class="form-label">Country</label>
-          <input type="text" id="new_country" class="form-control" required />
+          <label class="form-label">Country</label
+          ><input type="text" id="new_country" class="form-control" required />
         </div>
-
         <div class="form-group">
-          <label class="form-label">State</label>
-          <input type="text" id="new_state" class="form-control" required />
+          <label class="form-label">State</label
+          ><input type="text" id="new_state" class="form-control" required />
         </div>
-
         <div class="form-group">
-          <label class="form-label">City</label>
-          <input type="text" id="new_city" class="form-control" required />
+          <label class="form-label">City</label
+          ><input type="text" id="new_city" class="form-control" required />
         </div>
-
         <div class="form-group">
-          <label class="form-label">Street Address</label>
-          <input
+          <label class="form-label">Street Address</label
+          ><input
             type="text"
             id="new_street_address"
             class="form-control"
             required
           />
         </div>
-
         <div class="form-group">
-          <label class="form-label">Zip Code</label>
-          <input type="text" id="new_zip_code" class="form-control" required />
+          <label class="form-label">Zip Code</label
+          ><input type="text" id="new_zip_code" class="form-control" required />
         </div>
-
         <button class="btn" onclick="addNewAddress()">Save Address</button>
         <button class="btn btn-outline" onclick="hideAddAddressForm()">
           Cancel
@@ -96,7 +89,7 @@
       </div>
     </div>
 
-    <!-- Shipping Cost -->
+    <!-- Shipping Cost Section -->
     <div id="shipping-cost-section" class="form-group" style="margin-top: 1rem">
       <h4>Shipping</h4>
       <p id="shipping-cost">Select an address to calculate shipping...</p>
@@ -154,35 +147,49 @@
         <h3>Payment Method</h3>
 
         <div class="payment-option" data-method="credit_card">
-          <input type="radio" name="payment_method" value="credit_card" />
-          <label>Credit Card (via Stripe)</label>
+          <input
+            type="radio"
+            name="payment_method"
+            value="credit_card"
+            id="credit_card"
+          />
+          <label for="credit_card">Credit Card (via Stripe)</label>
         </div>
 
         <div class="payment-option" data-method="paypal">
-          <input type="radio" name="payment_method" value="paypal" />
-          <label>PayPal</label>
+          <input
+            type="radio"
+            name="payment_method"
+            value="paypal"
+            id="paypal"
+          />
+          <label for="paypal">PayPal</label>
         </div>
 
         <div class="payment-option" data-method="mpesa">
-          <input type="radio" name="payment_method" value="mpesa" />
-          <label>M-Pesa</label>
+          <input type="radio" name="payment_method" value="mpesa" id="mpesa" />
+          <label for="mpesa">M-Pesa</label>
         </div>
 
         <div class="payment-option" data-method="bank_transfer">
-          <input type="radio" name="payment_method" value="bank_transfer" />
-          <label>Bank Transfer</label>
+          <input
+            type="radio"
+            name="payment_method"
+            value="bank_transfer"
+            id="bank_transfer"
+          />
+          <label for="bank_transfer">Bank Transfer</label>
         </div>
 
-        <!-- PayPal Buttons -->
-        <div
-          id="paypal-button-container"
-          class="hidden"
-          style="margin-top: 1.5rem; min-height: 60px"
-        ></div>
-
-        <input type="hidden" id="payment_method" required />
+        <input
+          type="hidden"
+          name="payment_method"
+          id="payment_method"
+          required
+        />
       </div>
 
+      <!-- Place Order -->
       <button
         id="place-order"
         class="btn"
@@ -194,158 +201,298 @@
   </div>
 </section>
 
-<!-- Stripe -->
+<!-- Stripe.js -->
 <script src="https://js.stripe.com/v3/"></script>
-
-<!-- PayPal SDK (UNCHANGED) -->
-<script
-  src="https://www.paypal.com/sdk/js?client-id=<%= env.PAYPAL_CLIENT_ID %>&currency=USD&components=buttons"
-  data-namespace="paypalCheckout"
-></script>
-
 <script>
-  /* ✅ Improved PayPal readiness + safety */
-  let paypalRendered = false; // Prevent double rendering
+  // Simple Stripe initialization with direct key
 
-  function waitForPayPalSDK(callback, retries = 30) { // Increased retries
-    if (
-      window.paypalCheckout &&
-      typeof window.paypalCheckout.Buttons === "function"
-    ) {
-      callback();
-    } else if (retries > 0) {
-      setTimeout(() => waitForPayPalSDK(callback, retries - 1), 200);
-    } else {
-      console.error("PayPal SDK failed to load after timeout");
-      // Removed alert — too aggressive
-    }
+  const stripePublicKey =
+    "<%= env && env.STRIPE_PUBLIC_KEY ? env.STRIPE_PUBLIC_KEY : '' %>";
+
+  console.log("Stripe Key Debug:", {
+    envExists: typeof env !== "undefined",
+    envKey:
+      typeof env !== "undefined" ? env.STRIPE_PUBLIC_KEY : "env not defined",
+    processEnv: process.env
+      ? process.env.STRIPE_PUBLIC_KEY
+      : "process.env not available",
+  });
+
+  let stripe;
+
+  // If the key is empty or undefined, use a test key (replace with your actual key)
+  if (
+    !stripePublicKey ||
+    stripePublicKey === "undefined" ||
+    stripePublicKey === ""
+  ) {
+    console.warn("Using fallback test key - please configure your .env file");
+    // REPLACE THIS WITH YOUR ACTUAL STRIPE TEST PUBLIC KEY
+    stripe = Stripe("pk_test_51Q1Y2rSAcT2gJ6w6x9Q8zR1A7V2mKjX8L9pR6tY..."); // ← Replace with your actual key
+  } else {
+    stripe = Stripe(stripePublicKey);
   }
 
+  console.log("Stripe initialized successfully");
+
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("Checkout page loaded");
+
+    const addressCards = document.querySelectorAll(".address-card");
     const paymentOptions = document.querySelectorAll(".payment-option");
-    const paypalContainer = document.getElementById("paypal-button-container");
-    const placeOrderBtn = document.getElementById("place-order");
     const shippingInput = document.getElementById("shipping_address_id");
     const paymentInput = document.getElementById("payment_method");
+    const placeOrderBtn = document.getElementById("place-order");
 
     let shippingCost = 0;
-    const subtotal = parseFloat(
-      document.getElementById("subtotal").textContent
-    );
+    let subtotal = parseFloat(document.getElementById("subtotal").textContent);
 
-    function updateGrandTotal() {
-      document.getElementById("grand-total").textContent = (
-        subtotal + shippingCost
-      ).toFixed(2);
+    async function fetchShippingCost(addressId) {
+      try {
+        const res = await fetch(`/api/shipping/rates?address_id=${addressId}`);
+        const data = await res.json();
+        if (data.success) {
+          shippingCost = parseFloat(data.rate);
+          document.getElementById("shipping-amount").textContent =
+            shippingCost.toFixed(2);
+          updateGrandTotal();
+        } else {
+          throw new Error(data.message || "Failed to fetch shipping rate");
+        }
+      } catch (err) {
+        console.error("Shipping cost error:", err);
+        document.getElementById("shipping-cost").textContent =
+          "Error fetching cost";
+      }
     }
 
-    paymentOptions.forEach((option) => {
-      option.addEventListener("click", () => {
-        const radio = option.querySelector("input");
-        radio.checked = true;
-        paymentInput.value = radio.value;
+    function updateGrandTotal() {
+      const grandTotal = subtotal + shippingCost;
+      document.getElementById("grand-total").textContent =
+        grandTotal.toFixed(2);
+    }
 
-        // Reset UI
-        paypalContainer.innerHTML = "";
-        paypalContainer.classList.add("hidden");
-        placeOrderBtn.style.display = "block";
-        paypalRendered = false;
-
-        if (radio.value === "paypal") {
-          // 🔒 CRITICAL VALIDATION
-          if (!shippingInput.value || shippingInput.value === "") {
-            alert("Please select or add a shipping address before choosing PayPal.");
-            radio.checked = false;
-            paymentInput.value = "";
-            return;
-          }
-
-          if (subtotal <= 0) {
-            alert("Your cart is empty or total is invalid.");
-            radio.checked = false;
-            paymentInput.value = "";
-            return;
-          }
-
-          // Show PayPal container and render buttons
-          placeOrderBtn.style.display = "none";
-          paypalContainer.classList.remove("hidden");
-
-          waitForPayPalSDK(() => {
-            if (paypalRendered) return; // Safety
-
-            paypalCheckout
-              .Buttons({
-                style: {
-                  shape: "rect",
-                  color: "gold",
-                  layout: "vertical",
-                  label: "paypal",
-                },
-
-                createOrder() {
-                  return fetch("/api/paypal/create-order", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      shipping_address_id: shippingInput.value,
-                      shipping_cost: shippingCost,
-                      total_amount: parseFloat(
-                        document.getElementById("grand-total").textContent
-                      ).toFixed(2),
-                    }),
-                  })
-                    .then((res) => {
-                      if (!res.ok) {
-                        throw new Error(`HTTP ${res.status}`);
-                      }
-                      return res.json();
-                    })
-                    .then((data) => {
-                      if (!data.id) {
-                        throw new Error("No order ID returned");
-                      }
-                      return data.id;
-                    })
-                    .catch((err) => {
-                      console.error("Create order failed:", err);
-                      alert("Failed to create PayPal order. Please try again.");
-                      throw err; // Important: reject so PayPal doesn't proceed
-                    });
-                },
-
-                onApprove(data) {
-                  return fetch("/api/paypal/capture-order", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ orderId: data.orderID }),
-                  })
-                    .then((res) => res.json())
-                    .then((result) => {
-                      if (result.success) {
-                        window.location.href = "/account?order_success=true";
-                      } else {
-                        alert("Payment failed: " + (result.message || "Unknown error"));
-                      }
-                    })
-                    .catch(() => {
-                      alert("Failed to capture payment. Please contact support.");
-                    });
-                },
-
-                onError(err) {
-                  console.error("PayPal Buttons error:", err);
-                  alert("PayPal payment error. Please try again.");
-                },
-              })
-              .render("#paypal-button-container");
-
-            paypalRendered = true;
-          });
-        }
+    // Address selection
+    addressCards.forEach((card) => {
+      card.addEventListener("click", function () {
+        addressCards.forEach((c) => c.classList.remove("selected"));
+        this.classList.add("selected");
+        shippingInput.value = this.dataset.addressId;
+        console.log("Address selected:", this.dataset.addressId);
+        fetchShippingCost(this.dataset.addressId); // ✅ Fetch rate dynamically
       });
     });
+
+    // Payment selection
+    paymentOptions.forEach((option) => {
+      option.addEventListener("click", function () {
+        paymentOptions.forEach((o) => o.classList.remove("selected"));
+        this.classList.add("selected");
+        const radio = this.querySelector("input[type=radio]");
+        radio.checked = true;
+        paymentInput.value = radio.value;
+        console.log("Payment method selected:", radio.value);
+      });
+    });
+
+    // Place Order
+    placeOrderBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+
+      console.log("Place order clicked");
+
+      // Show loading state
+      const originalText = placeOrderBtn.textContent;
+      placeOrderBtn.disabled = true;
+      placeOrderBtn.textContent = "Processing...";
+
+      try {
+        const shippingAddressId = shippingInput.value;
+        const paymentMethod = paymentInput.value;
+        const couponCode = document.getElementById("coupon_code").value.trim();
+
+        console.log("Form data:", {
+          shippingAddressId,
+          paymentMethod,
+          couponCode,
+        });
+
+        // Validation
+        if (!shippingAddressId) {
+          alert("Please select a shipping address");
+          throw new Error("No shipping address selected");
+        }
+
+        if (!paymentMethod) {
+          alert("Please select a payment method");
+          throw new Error("No payment method selected");
+        }
+
+        if (paymentMethod === "mpesa") {
+          console.log("Processing M-Pesa payment...");
+          const res = await fetch("/api/orders/place", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shipping_address_id: shippingAddressId,
+              payment_method: paymentMethod,
+              coupon_code: couponCode,
+              shipping_cost: shippingCost, // ✅ include shipping cost
+            }),
+          });
+
+          const data = await res.json();
+          console.log("M-Pesa response:", data);
+
+          if (data.success && data.redirect) {
+            console.log("Redirecting to M-Pesa payment:", data.redirect);
+            window.location.href = data.redirect;
+            return;
+          } else {
+            throw new Error(data.message || "M-Pesa payment setup failed");
+          }
+        } else if (paymentMethod === "credit_card") {
+          console.log("Processing Stripe payment...");
+
+          // Stripe Checkout
+          const res = await fetch("/create-checkout-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shipping_address_id: shippingAddressId,
+              coupon_code: couponCode,
+            }),
+          });
+
+          console.log("Server response status:", res.status);
+
+          // Check if response is HTML (error page) instead of JSON
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const text = await res.text();
+            console.error("Non-JSON response:", text.substring(0, 200));
+            throw new Error("Server returned an error page instead of JSON");
+          }
+
+          const data = await res.json();
+          console.log("Server response data:", data);
+
+          if (!res.ok) {
+            throw new Error(data.error || `HTTP error! status: ${res.status}`);
+          }
+
+          if (data.id) {
+            console.log(
+              "Redirecting to Stripe Checkout with session ID:",
+              data.id
+            );
+            const result = await stripe.redirectToCheckout({
+              sessionId: data.id,
+            });
+
+            if (result.error) {
+              console.error("Stripe redirect error:", result.error);
+              throw new Error("Stripe redirect error: " + result.error.message);
+            }
+          } else {
+            throw new Error("No session ID received from server");
+          }
+        } else {
+          // Other payment methods (not M-Pesa or credit card)
+          console.log("Processing other payment method:", paymentMethod);
+          const res = await fetch("/api/orders/place", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shipping_address_id: shippingAddressId,
+              payment_method: paymentMethod,
+              coupon_code: couponCode,
+            }),
+          });
+
+          const data = await res.json();
+          console.log("Server response:", data);
+
+          if (data.success) {
+            if (data.redirect) {
+              console.log("Redirecting to:", data.redirect);
+              window.location.replace(data.redirect);
+              return;
+            } else {
+              alert("Order placed successfully! Order ID: " + data.orderId);
+              window.location.href = "/account?order_success=true";
+            }
+          } else {
+            throw new Error(data.message || "Failed to place order");
+          }
+        }
+      } catch (error) {
+        console.error("Checkout error:", error);
+        alert("Error: " + error.message);
+      } finally {
+        // Reset button state
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = originalText;
+      }
+    });
   });
+
+  // Show/hide add address form
+  function showAddAddressForm() {
+    document.getElementById("add-address-form").classList.remove("hidden");
+  }
+
+  function hideAddAddressForm() {
+    document.getElementById("add-address-form").classList.add("hidden");
+  }
+
+  // Add new address function
+  async function addNewAddress() {
+    try {
+      const addressData = {
+        address_type: document.getElementById("new_address_type").value,
+        country: document.getElementById("new_country").value,
+        state: document.getElementById("new_state").value,
+        city: document.getElementById("new_city").value,
+        street_address: document.getElementById("new_street_address").value,
+        zip_code: document.getElementById("new_zip_code").value,
+      };
+
+      // Validate required fields
+      for (let key in addressData) {
+        if (!addressData[key]) {
+          alert("Please fill all address fields");
+          return;
+        }
+      }
+
+      const res = await fetch("/add-address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        alert("Address added successfully!");
+        location.reload();
+      } else {
+        throw new Error(result.message || "Failed to add address");
+      }
+    } catch (error) {
+      console.error("Address error:", error);
+      alert("Error adding address: " + error.message);
+    }
+  }
 </script>
 
 <%- include('../partials/footer') %>
